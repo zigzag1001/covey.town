@@ -12,48 +12,32 @@ The frontend implements video chat using the [Twilio Programmable Video](https:/
 
 A backend service (in the `townService` directory) implements the application logic: tracking which "towns" are available to be joined, and the state of each of those towns.
 
-## Running this app locally
+## Development (local npm workflow)
 
-Running the application locally entails running both the backend service and a frontend.
+Use Node `18.x` and npm `9.x` for local development.
 
-### Setting up the backend
+1. Install dependencies and generate code:
+   ```bash
+   cd shared && npm install
+   cd ../townService && npm install && npm run prestart
+   cd ../frontend && npm install && npm run client
+   ```
+2. Configure local env files:
+   - `townService/.env`: `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_API_AUTH_TOKEN` (optional: `DEMO_TOWN_ID`)
+   - `frontend/.env`: `NEXT_PUBLIC_TOWNS_SERVICE_URL=http://localhost:8081`
+3. Start both services in development mode (hot reload):
+   ```bash
+   cd townService && npm start
+   cd frontend && npm start
+   ```
 
-To run the backend, you will need a Twilio account. Twilio provides new accounts with $15 of credit, which is more than enough to get started.
-To create an account and configure your local environment:
+This repository currently ships `docker-compose.prod.yml` for production-style containers; use the npm commands above for day-to-day development.
 
-1. Go to [Twilio](https://www.twilio.com/) and create an account. You do not need to provide a credit card to create a trial account.
-2. Create an API key and secret (select "API Keys" on the left under "Settings")
-3. Create a `.env` file in the `townService` directory, setting the values as follows:
+## Production deployment with Docker Compose
 
-| Config Value            | Description                               |
-| ----------------------- | ----------------------------------------- |
-| `TWILIO_ACCOUNT_SID`    | Visible on your twilio account dashboard. |
-| `TWILIO_API_KEY_SID`    | The SID of the new API key you created.   |
-| `TWILIO_API_KEY_SECRET` | The secret for the API key you created.   |
-| `TWILIO_API_AUTH_TOKEN` | Visible on your twilio account dashboard. |
+Production deployments should use prebuilt images from GHCR. On resource-limited VPS hosts, pull and run images instead of building on the server.
 
-### Starting the backend
-
-Once your backend is configured, you can start it by running `npm start` in the `townService` directory (the first time you run it, you will also need to run `npm install`).
-The backend will automatically restart if you change any of the files in the `townService/src` directory.
-
-### Configuring the frontend
-
-Create a `.env` file in the `frontend` directory, with the line: `NEXT_PUBLIC_TOWNS_SERVICE_URL=http://localhost:8081` (if you deploy the towns service to another location, put that location here instead)
-
-For ease of debugging, you might also set the environmental variable `NEXT_PUBLIC_TOWN_DEV_MODE=true`. When set to `true`, the frontend will
-automatically connect to the town with the friendly name "DEBUG_TOWN" (creating one if needed), and will *not* try to connect to the Twilio API. This is useful if you want to quickly test changes to the frontend (reloading the page and re-acquiring video devices can be much slower than re-loading without Twilio).
-
-### Running the frontend
-
-In the `frontend` directory, run `npm start` (again, you'll need to run `npm install` the very first time). After several moments (or minutes, depending on the speed of your machine), a browser will open with the frontend running locally.
-The frontend will automatically re-compile and reload in your browser if you change any files in the `frontend/src` directory.
-## Running with Docker Compose
-
-You can run both services in production mode with Docker Compose:
-
-1. From the repository root, create a `.env` file with your Twilio configuration:
-
+1. From the repository root, create `.env` with required backend secrets:
    ```env
    TWILIO_ACCOUNT_SID=AC...
    TWILIO_API_KEY_SID=SK...
@@ -61,18 +45,32 @@ You can run both services in production mode with Docker Compose:
    TWILIO_API_AUTH_TOKEN=...
    # Optional:
    DEMO_TOWN_ID=
-   # Optional frontend public backend URL used at build time:
-   NEXT_PUBLIC_TOWNS_SERVICE_URL=http://localhost:8081
    ```
-
-2. Build and start both containers:
-
+2. On the VPS, authenticate and deploy:
    ```bash
-   docker compose up --build
+   docker login ghcr.io
+   docker compose -f docker-compose.prod.yml pull
+   docker compose -f docker-compose.prod.yml up -d
    ```
 
-3. Open:
-   - Frontend: http://localhost:3000
-   - Town service: http://localhost:8081
+If you publish images yourself, build and push from your build machine (example PowerShell):
 
-If you deploy the backend at another public URL, set `NEXT_PUBLIC_TOWNS_SERVICE_URL` before building the frontend image (`docker compose up --build`) so browser clients point to that URL.
+```powershell
+docker build `
+  -f Dockerfile.townService `
+  -t ghcr.io/zigzag1001/covey-town-townservice:latest `
+  .
+
+docker build `
+  -f Dockerfile.frontend `
+  --build-arg NEXT_PUBLIC_TOWNS_SERVICE_URL=https://api.covey.001201.xyz `
+  -t ghcr.io/zigzag1001/covey-town-frontend:latest `
+  .
+
+docker push ghcr.io/zigzag1001/covey-town-townservice:latest
+docker push ghcr.io/zigzag1001/covey-town-frontend:latest
+```
+
+`NEXT_PUBLIC_TOWNS_SERVICE_URL` is a frontend build-time value; set it to the public HTTPS API URL (for example, `https://api.covey.001201.xyz`) before building/publishing the frontend image.
+
+Use HTTPS for browser camera/microphone access. If you use separate frontend/API subdomains, point both DNS records to the VPS and terminate TLS at Caddy (or another reverse proxy). In that setup, only ports `80/443` should be publicly exposed; frontend/backend container ports stay internal.
