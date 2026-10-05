@@ -1,19 +1,49 @@
-FROM node:18-buster-slim
-RUN apt-get update || : && apt-get install python3 build-essential libpango1.0-dev libcairo2-dev libjpeg-dev libgif-dev -y && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /usr/src/app
+FROM node:18-bookworm-slim AS builder
 WORKDIR /usr/src/app
-COPY ./ /usr/src/app
-RUN rm -rf node_modules
-RUN npm ci 
-WORKDIR /usr/src/app/frontend
-RUN rm -rf node_modules 
-RUN npm ci
-ENV GENERATE_SOURCEMAP false
-ENV NODE_OPTIONS --max_old_space_size=2048
-ENV NODE_ENV production
-ENV PORT 80
-EXPOSE 80
-ARG NEXT_PUBLIC_TOWNS_SERVICE_URL
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    libcairo2-dev \
+    libgif-dev \
+    libjpeg-dev \
+    libpango1.0-dev \
+    libpixman-1-dev \
+    librsvg2-dev \
+    pkg-config \
+    python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+ARG NEXT_PUBLIC_TOWNS_SERVICE_URL=http://localhost:8081
 ENV NEXT_PUBLIC_TOWNS_SERVICE_URL=${NEXT_PUBLIC_TOWNS_SERVICE_URL}
-RUN npm run build
-CMD [ "npm", "start" ]
+
+COPY townService/package.json townService/package-lock.json ./townService/
+COPY shared/package.json shared/package-lock.json ./shared/
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+
+RUN npm ci --prefix ./townService && npm ci --prefix ./shared && npm ci --prefix ./frontend
+
+COPY townService ./townService
+COPY shared ./shared
+COPY frontend ./frontend
+
+RUN npm run --prefix ./townService prestart
+RUN npm run --prefix ./frontend client
+RUN npm run --prefix ./frontend build
+RUN npm prune --prefix ./frontend --omit=dev
+
+FROM node:18-bookworm-slim
+WORKDIR /usr/src/app/frontend
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY --from=builder /usr/src/app/frontend/package.json ./package.json
+COPY --from=builder /usr/src/app/frontend/package-lock.json ./package-lock.json
+COPY --from=builder /usr/src/app/frontend/node_modules ./node_modules
+COPY --from=builder /usr/src/app/frontend/.next ./.next
+COPY --from=builder /usr/src/app/frontend/public ./public
+
+EXPOSE 3000
+
+CMD ["npm", "run", "serve", "--", "-p", "3000"]
