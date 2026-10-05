@@ -24,6 +24,7 @@ RUN npm ci --omit=dev --prefix ./townService
 COPY --from=builder /usr/src/app/townService/build ./townService/build
 COPY --from=builder /usr/src/app/townService/generated ./townService/generated
 COPY --from=builder /usr/src/app/shared/generated ./shared/generated
+COPY frontend/public/assets/tilemaps ./frontend/public/assets/tilemaps
 
 WORKDIR /usr/src/app/townService
 EXPOSE 8081
