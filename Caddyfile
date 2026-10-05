@@ -1,0 +1,7 @@
+covey.001201.xyz {
+    reverse_proxy frontend:3000
+}
+
+api.covey.001201.xyz {
+    reverse_proxy townservice:8081
+}
