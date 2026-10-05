@@ -314,9 +314,10 @@ describe('ConnectFourAreaController', () => {
       //Also check that the rest are still undefined
       for (let i = 0; i < CONNECT_FOUR_ROWS; i++) {
         for (let j = 0; j < CONNECT_FOUR_COLS; j++) {
-          if (
-            !((i === 0 && j == 0) || (i == CONNECT_FOUR_ROWS - 1 && j === CONNECT_FOUR_COLS - 1))
-          ) {
+          if (!(
+            (i === 0 && j == 0) ||
+            (i == CONNECT_FOUR_ROWS - 1 && j === CONNECT_FOUR_COLS - 1)
+          )) {
             expect(controller.board[i][j]).toBeUndefined();
           }
         }

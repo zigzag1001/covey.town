@@ -27,8 +27,7 @@ interface EventsMap {
 export type EventNames<Map extends EventsMap> = keyof Map & (string | symbol);
 export type EventParams<Map extends EventsMap, Ev extends EventNames<Map>> = Parameters<Map[Ev]>;
 type ReservedOrUserEventNames<ReservedEventsMap extends EventsMap, UserEvents extends EventsMap> =
-  | EventNames<ReservedEventsMap>
-  | EventNames<UserEvents>;
+  EventNames<ReservedEventsMap> | EventNames<UserEvents>;
 
 /**
  * All events that can be received by the CoveyTownSocket - both the reserved events from the library (e.g. "disconnect"), and also
