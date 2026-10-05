@@ -1,10 +1,31 @@
-FROM node:16-buster-slim
-RUN mkdir -p /usr/src/app
+FROM node:18-bookworm-slim AS builder
 WORKDIR /usr/src/app
-COPY ./ /usr/src/app
+
+COPY shared/package.json shared/package-lock.json ./shared/
+COPY townService/package.json townService/package-lock.json ./townService/
+
+RUN npm ci --prefix ./shared && npm ci --prefix ./townService
+
+COPY shared ./shared
+COPY townService ./townService
+
+RUN npm run --prefix ./townService prestart
+RUN npm run --prefix ./townService build
+
+FROM node:18-bookworm-slim
+WORKDIR /usr/src/app
+
+ENV NODE_ENV=production
+ENV PORT=8081
+
+COPY townService/package.json townService/package-lock.json ./townService/
+RUN npm ci --omit=dev --prefix ./townService
+
+COPY --from=builder /usr/src/app/townService/build ./townService/build
+COPY --from=builder /usr/src/app/townService/generated ./townService/generated
+COPY --from=builder /usr/src/app/shared/generated ./shared/generated
+
 WORKDIR /usr/src/app/townService
-RUN npm --unsafe-perm install && npm run prestart && npm cache clean --force
-ENV NODE_ENV production
-ENV PORT 80
-EXPOSE 80
-CMD [ "npx", "ts-node", "src/Server.ts" ]
+EXPOSE 8081
+
+CMD ["node", "--es-module-specifier-resolution=node", "build/Server.js"]

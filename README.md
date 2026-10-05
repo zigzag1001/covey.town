@@ -48,3 +48,31 @@ automatically connect to the town with the friendly name "DEBUG_TOWN" (creating 
 
 In the `frontend` directory, run `npm start` (again, you'll need to run `npm install` the very first time). After several moments (or minutes, depending on the speed of your machine), a browser will open with the frontend running locally.
 The frontend will automatically re-compile and reload in your browser if you change any files in the `frontend/src` directory.
+## Running with Docker Compose
+
+You can run both services in production mode with Docker Compose:
+
+1. From the repository root, create a `.env` file with your Twilio configuration:
+
+   ```env
+   TWILIO_ACCOUNT_SID=AC...
+   TWILIO_API_KEY_SID=SK...
+   TWILIO_API_KEY_SECRET=...
+   TWILIO_API_AUTH_TOKEN=...
+   # Optional:
+   DEMO_TOWN_ID=
+   # Optional frontend public backend URL used at build time:
+   NEXT_PUBLIC_TOWNS_SERVICE_URL=http://localhost:8081
+   ```
+
+2. Build and start both containers:
+
+   ```bash
+   docker compose up --build
+   ```
+
+3. Open:
+   - Frontend: http://localhost:3000
+   - Town service: http://localhost:8081
+
+If you deploy the backend at another public URL, set `NEXT_PUBLIC_TOWNS_SERVICE_URL` before building the frontend image (`docker compose up --build`) so browser clients point to that URL.
