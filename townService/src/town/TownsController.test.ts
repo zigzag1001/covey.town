@@ -3,13 +3,13 @@ import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { nanoid } from 'nanoid';
 import { Town } from '../api/Model';
 import { ConversationArea, Interactable, TownEmitter, ViewingArea } from '../types/CoveyTownSocket';
+import { isViewingArea } from '../lib/InteractableUtils';
 import TownsStore from '../lib/TownsStore';
 import {
   createConversationForTesting,
   getLastEmittedEvent,
   extractSessionToken,
   mockPlayer,
-  isViewingArea,
   isConversationArea,
   MockedPlayer,
 } from '../TestUtils';

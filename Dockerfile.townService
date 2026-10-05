@@ -28,4 +28,4 @@ COPY --from=builder /usr/src/app/shared/generated ./shared/generated
 WORKDIR /usr/src/app/townService
 EXPOSE 8081
 
-CMD ["node", "--es-module-specifier-resolution=node", "build/Server.js"]
+CMD ["node", "--es-module-specifier-resolution=node", "build/src/Server.js"]
